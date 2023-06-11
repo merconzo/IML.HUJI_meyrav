@@ -39,7 +39,15 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        err = np.inf
+        for j, sign in product(X.shape[1], [-1, 1]):
+            thresh, thresh_err = self._find_threshold(X[:, j], y, sign)
+            if thresh_err < err:
+                err = thresh_errs
+                self.threshold_ = thresh
+                self.sign_ = sign
+                self.j_ = j
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -63,7 +71,7 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        return np.where(X[:, self.j_] < self.threshold_, -self.sign_, self.sign_)
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
         """
@@ -95,7 +103,15 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        indexes = np.argsort(values)
+        vals, labels = values[indexes], labels[indexes]
+        abs_labels = np.abs(labels)
+        loss = np.sum(abs_labels[np.sign(labels) == sign])
+        loss = np.append(loss, loss - np.cumsum(labels * sign))
+
+        i = np.argmin(loss)
+        vals_mat = np.concatenate([[-np.inf], values[1:], [-np.inf]])
+        return vals_mat[i], loss[i]
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -114,4 +130,5 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        y_pred = self._predict(X)
+        return (y_pred != y).sum()
