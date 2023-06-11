@@ -48,7 +48,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     train_losses = [ada_learner.partial_loss(train_X, train_y, t) for t in iters]
     test_losses = [ada_learner.partial_loss(test_X, test_y, t) for t in iters]
 
-    fig = go.figure(
+    go.figure(
         [go.Scatter(x=iters, y=train_losses,
                     mode='markers + lines', marker=dict(color='purple'), name='Train Loss'),
          go.Scatter(x=iters, y=test_losses,
@@ -58,12 +58,23 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         xaxis=dict(title=f"iteration", showgrid=True,
                    tickmode='linear', tick0=0),
         yaxis=dict(title=f"Classification Loss", showgrid=True)
-    ).write_image(os.path.join(f"ada_plot_{noise}.png"))
+    ).write_image(os.path.join(f"plot_ada_{noise}.png"))
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+    fig = make_subplots(1, 4, subplot_titles=[f"{t} classifiers" for t in T]
+                        ).update_layout(xaxis=dict(visible=False), yaxis=dict(visible=False))
+    for i, t in enumerate(T):
+        surface = decision_surface(predict=(lambda X: ada_learner.partial_predict(X, t)),
+                                   xrange=lims[0], yrange=lims[1], density=60, showscale=False)
+        fig.add_traces([surface,
+                        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers",
+                                   marker=dict(color=test_y,
+                                               symbol=np.where(test_y == 1, class_symbols[0], class_symbols[1])),
+                                   showlegend=False)],
+                       rows=1, cols=(i + 1))
+    fig.write_image(os.path.join(f"plot_ada_{noise}_decisions.png"))
 
     # Question 3: Decision surface of best performing ensemble
     raise NotImplementedError()
