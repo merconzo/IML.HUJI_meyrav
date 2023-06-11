@@ -40,10 +40,10 @@ class DecisionStump(BaseEstimator):
             Responses of input data to fit to
         """
         err = np.inf
-        for j, sign in product(X.shape[1], [-1, 1]):
+        for j, sign in product(range(X.shape[1]), [-1, 1]):
             thresh, thresh_err = self._find_threshold(X[:, j], y, sign)
             if thresh_err < err:
-                err = thresh_errs
+                err = thresh_err
                 self.threshold_ = thresh
                 self.sign_ = sign
                 self.j_ = j

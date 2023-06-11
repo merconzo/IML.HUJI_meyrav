@@ -5,9 +5,10 @@ from IMLearn.learners.classifiers import DecisionStump
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import os
 
 
-def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
+def generate_data(n: int, noise_ratio: float = 0) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate a dataset in R^2 of specified size
 
@@ -42,7 +43,22 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    raise NotImplementedError()
+    ada_learner = AdaBoost(wl=DecisionStump, iterations=n_learners).fit(train_X, train_y)
+    iters = [*range(1, n_learners + 1)]
+    train_losses = [ada_learner.partial_loss(train_X, train_y, t) for t in iters]
+    test_losses = [ada_learner.partial_loss(test_X, test_y, t) for t in iters]
+
+    fig = go.figure(
+        [go.Scatter(x=iters, y=train_losses,
+                    mode='markers + lines', marker=dict(color='purple'), name='Train Loss'),
+         go.Scatter(x=iters, y=test_losses,
+                    mode='markers + lines', marker=dict(color='orange'), name='Test Loss')
+         ]).update_layout(
+        title=f"Change in Adaboost's Loss over Number of Classifiers (noise={noise})",
+        xaxis=dict(title=f"iteration", showgrid=True,
+                   tickmode='linear', tick0=0),
+        yaxis=dict(title=f"Classification Loss", showgrid=True)
+    ).write_image(os.path.join(f"ada_plot_{noise}.png"))
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
@@ -58,4 +74,4 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    fit_and_evaluate_adaboost(noise=0)
