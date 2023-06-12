@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 from typing import Tuple
 from IMLearn.metalearners.adaboost import AdaBoost
@@ -7,7 +5,6 @@ from IMLearn.learners.classifiers import DecisionStump
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import matplotlib.figure as pf
 import os
 
 
@@ -67,8 +64,9 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
          ]).update_layout(
         title=f"Change in Adaboost's Loss over Number of Classifiers ("
               f"noise={noise})",
-        xaxis=dict(title=f"iteration", showgrid=True),
-        yaxis=dict(title=f"Classification Loss", showgrid=True)
+        xaxis=dict(title=f"Iteration (number of fitted learners)",
+                   showgrid=True),
+        yaxis=dict(title=f"Classification error", showgrid=True)
         ).write_image(os.path.join(f"plot_ada_{noise}.png"))
 
     # Question 2: Plotting decision surfaces
@@ -108,7 +106,27 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
     fig.write_image(os.path.join(f"plot_ada_{noise}_decisions.png"))
 
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
+    t_min_loss = np.argmin(test_losses) + 1
+    accuracy = 1 - round(test_losses[t_min_loss - 1], 2)
+    surface_min = decision_surface(
+        predict=(lambda X: ada_learner.partial_predict(X, t_min_loss)),
+        xrange=lims[0], yrange=lims[1], density=60, showscale=False)
+    go.Figure([
+        surface_min,
+        go.Scatter(
+            x=test_X[:, 0], y=test_X[:, 1],
+            mode="markers",
+            marker=dict(
+                color=test_y,
+                symbol=np.where(test_y == 1, class_symbols[0],
+                                class_symbols[1])),
+            showlegend=False)]
+        ).update_layout(
+        title=f"Surface of ensemble with minimum error<br>"
+              f"(size={t_min_loss}, accuracy={accuracy})",
+        xaxis=dict(visible=False), yaxis=dict(visible=False),
+        width=600, height=600, margin=dict(l=20, r=20, t=50, b=20)
+        ).write_image(os.path.join(f"plot_ada_{noise}_min_err.png"))
 
     # Question 4: Decision surface with weighted samples
     raise NotImplementedError()
