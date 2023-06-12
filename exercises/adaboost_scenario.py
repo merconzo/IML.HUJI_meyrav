@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 from typing import Tuple
 from IMLearn.metalearners.adaboost import AdaBoost
@@ -5,10 +7,12 @@ from IMLearn.learners.classifiers import DecisionStump
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.figure as pf
 import os
 
 
-def generate_data(n: int, noise_ratio: float = 0) -> Tuple[np.ndarray, np.ndarray]:
+def generate_data(n: int, noise_ratio: float = 0) -> Tuple[
+    np.ndarray, np.ndarray]:
     """
     Generate a dataset in R^2 of specified size
 
@@ -29,7 +33,8 @@ def generate_data(n: int, noise_ratio: float = 0) -> Tuple[np.ndarray, np.ndarra
         Labels of samples
     """
     '''
-    generate samples X with shape: (num_samples, 2) and labels y with shape (num_samples).
+    generate samples X with shape: (num_samples, 2) and labels y with shape 
+    (num_samples).
     num_samples: the number of samples to generate
     noise_ratio: invert the label for this ratio of the samples
     '''
@@ -39,41 +44,67 @@ def generate_data(n: int, noise_ratio: float = 0) -> Tuple[np.ndarray, np.ndarra
     return X, y
 
 
-def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
-    (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
+def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
+                              test_size=500):
+    (train_X, train_y), (test_X, test_y) = generate_data(
+        train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    ada_learner = AdaBoost(wl=DecisionStump, iterations=n_learners).fit(train_X, train_y)
+    ada_learner = AdaBoost(wl=DecisionStump, iterations=n_learners).fit(
+        train_X, train_y)
     iters = [*range(1, n_learners + 1)]
-    train_losses = [ada_learner.partial_loss(train_X, train_y, t) for t in iters]
+    train_losses = [ada_learner.partial_loss(train_X, train_y, t) for t in
+                    iters]
     test_losses = [ada_learner.partial_loss(test_X, test_y, t) for t in iters]
 
-    go.figure(
+    go.Figure(
         [go.Scatter(x=iters, y=train_losses,
-                    mode='markers + lines', marker=dict(color='purple'), name='Train Loss'),
+                    mode='lines', marker=dict(color='purple'),
+                    name='Train Loss'),
          go.Scatter(x=iters, y=test_losses,
-                    mode='markers + lines', marker=dict(color='orange'), name='Test Loss')
+                    mode='lines', marker=dict(color='orange'),
+                    name='Test Loss')
          ]).update_layout(
-        title=f"Change in Adaboost's Loss over Number of Classifiers (noise={noise})",
-        xaxis=dict(title=f"iteration", showgrid=True,
-                   tickmode='linear', tick0=0),
+        title=f"Change in Adaboost's Loss over Number of Classifiers ("
+              f"noise={noise})",
+        xaxis=dict(title=f"iteration", showgrid=True),
         yaxis=dict(title=f"Classification Loss", showgrid=True)
-    ).write_image(os.path.join(f"plot_ada_{noise}.png"))
+        ).write_image(os.path.join(f"plot_ada_{noise}.png"))
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
-    lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    fig = make_subplots(1, 4, subplot_titles=[f"{t} classifiers" for t in T]
-                        ).update_layout(xaxis=dict(visible=False), yaxis=dict(visible=False))
-    for i, t in enumerate(T):
-        surface = decision_surface(predict=(lambda X: ada_learner.partial_predict(X, t)),
-                                   xrange=lims[0], yrange=lims[1], density=60, showscale=False)
-        fig.add_traces([surface,
-                        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers",
-                                   marker=dict(color=test_y,
-                                               symbol=np.where(test_y == 1, class_symbols[0], class_symbols[1])),
-                                   showlegend=False)],
-                       rows=1, cols=(i + 1))
+    locs = [(1, 1), (1, 2), (2, 1), (2, 2)]
+    lims = np.array([np.r_[train_X, test_X].min(axis=0),
+                     np.r_[train_X, test_X].max(axis=0)]).T + np.array(
+        [-.1, .1])
+    fig = make_subplots(2, 2, subplot_titles=[f"{t} classifiers" for t in T],
+                        vertical_spacing=0.1)
+    for loc, t in zip(locs, T):
+        r, c = loc
+        surface = decision_surface(
+            predict=(lambda X: ada_learner.partial_predict(X, t)),
+            xrange=lims[0], yrange=lims[1], density=60, showscale=False)
+        fig.add_traces(
+            [surface,
+             go.Scatter(
+                 x=test_X[:, 0], y=test_X[:, 1],
+                 mode="markers",
+                 marker=dict(
+                     color=test_y,
+                     symbol=np.where(test_y == 1, class_symbols[0],
+                                     class_symbols[1])),
+                 showlegend=False)],
+            rows=r, cols=c)
+    fig.update_layout(
+        autosize=False,
+        margin=dict(l=20, r=20, t=20, b=20),
+        title={
+            'text': "Decision surfaces of different number of classifiers",
+            'y': 1, 'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        font=dict(size=10),
+        width=800, height=800)
     fig.write_image(os.path.join(f"plot_ada_{noise}_decisions.png"))
 
     # Question 3: Decision surface of best performing ensemble
