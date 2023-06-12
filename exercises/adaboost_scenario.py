@@ -81,7 +81,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         r, c = loc
         surface = decision_surface(
             predict=(lambda X: ada_learner.partial_predict(X, t)),
-            xrange=lims[0], yrange=lims[1], density=60, showscale=False)
+            xrange=lims[0], yrange=lims[1],  showscale=False, density=50)
         fig.add_traces(
             [surface,
              go.Scatter(
@@ -97,7 +97,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         autosize=False,
         margin=dict(l=20, r=20, t=20, b=20),
         title={
-            'text': "Decision surfaces of different number of classifiers",
+            'text': f"Decision surfaces of different number of classifiers ("
+                    f"noise={noise})",
             'y': 1, 'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'},
@@ -110,7 +111,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
     accuracy = 1 - round(test_losses[t_min_loss - 1], 2)
     surface_min = decision_surface(
         predict=(lambda X: ada_learner.partial_predict(X, t_min_loss)),
-        xrange=lims[0], yrange=lims[1], density=60, showscale=False)
+        xrange=lims[0], yrange=lims[1],  showscale=False, density=50)
     go.Figure([
         surface_min,
         go.Scatter(
@@ -123,15 +124,36 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
             showlegend=False)]
         ).update_layout(
         title=f"Surface of ensemble with minimum error<br>"
-              f"(size={t_min_loss}, accuracy={accuracy})",
+              f"(size={t_min_loss}, accuracy={accuracy}, noise={noise})",
         xaxis=dict(visible=False), yaxis=dict(visible=False),
         width=600, height=600, margin=dict(l=20, r=20, t=50, b=20)
         ).write_image(os.path.join(f"plot_ada_{noise}_min_err.png"))
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    D = ada_learner.D_ / ada_learner.D_.max() * 15
+    surface_D = decision_surface(
+        predict=ada_learner.predict,
+        xrange=lims[0], yrange=lims[1], showscale=False)
+    go.Figure([
+        surface_D,
+        go.Scatter(
+            x=train_X[:, 0], y=train_X[:, 1],
+            mode="markers",
+            marker=dict(
+                size=D,
+                color=train_y,
+                symbol=np.where(train_y == 1, class_symbols[0],
+                                class_symbols[1])),
+            showlegend=False)]
+        ).update_layout(
+        title=f"Distribution of Adaboost's last sample with weighted samples "
+              f"(noise={noise})",
+        xaxis=dict(visible=False), yaxis=dict(visible=False),
+        width=600, height=600, margin=dict(l=20, r=20, t=50, b=20)
+        ).write_image(os.path.join(f"plot_ada_{noise}_last.png"))
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(noise=0)
+    fit_and_evaluate_adaboost(noise=0.4)
