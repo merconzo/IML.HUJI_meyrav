@@ -6,7 +6,7 @@ from IMLearn.base import BaseModule, BaseLR
 from .learning_rate import FixedLR
 
 OUTPUT_VECTOR_TYPE = ["last", "best", "average"]
-LAST, BEST, AVG = 0, 1, 2
+LAST, BEST, AVG = OUTPUT_VECTOR_TYPE
 NORM = np.linalg.norm
 
 
@@ -146,10 +146,29 @@ class GradientDescent:
         if f.weights is None:
             f.weights(np.random.rand(X.shape[1]))
         best_w = f.weights
-        best_vals = f.compute_output(X=X, y=y)
+        min_val = f.compute_output(X=X, y=y)
         sum_w = np.zeros(f.shape[0])
+        t = 0
         for t in range(self.max_iter_):
-            prev_w = f.weights
+            prev_w = f.weights  # preserve w(t-1)
+            # update current properties:
             sum_w += prev_w
-            if NORM() > self.tol_:
+            eta = self.learning_rate_.lr_step(t=t)
+            cur_grad = f.compute_jacobian(X=X, y=y)
+            f.weights(prev_w - eta * cur_grad)  # cur w
+            cur_val = f.compute_output(X=X, y=y)
+            delta = NORM(f.weights - prev_w)
+            if cur_val < min_val:
+                min_val = cur_val
+                best_w = f.weights
+            self.callback_(solver=self, weights=f.weights, val=cur_val,
+                           grad=cur_grad, t=t, eta=eta, delta=delta)
+            if delta < self.tol_:
                 break
+
+        if self.out_type_ == LAST:
+            return f.weights
+        elif self.out_type_ == BEST:
+            return best_w
+        elif self.out_type_ == AVG:
+            return sum_w / t if t != 0 else f.weights
