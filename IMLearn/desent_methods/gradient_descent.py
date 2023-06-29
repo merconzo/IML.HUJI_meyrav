@@ -161,7 +161,7 @@ class GradientDescent:
             if cur_val < min_val:
                 min_val = cur_val
                 best_w = f.weights
-            self.callback_(solver=self, weights=f.weights, val=cur_val,
+            self.callback_(solver=self, w=f.weights, val=cur_val,
                            grad=cur_grad, t=t, eta=eta, delta=delta)
             if delta < self.tol_:
                 break
