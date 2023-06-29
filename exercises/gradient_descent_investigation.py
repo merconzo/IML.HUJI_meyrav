@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 from typing import Tuple, List, Callable, Type
 
 from IMLearn import BaseModule
@@ -90,11 +91,49 @@ def get_gd_state_recorder_callback() -> Tuple[
     return wrapper, vals, weights
 
 
-
 def compare_fixed_learning_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
         etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+
+    conv1_traces, conv2_traces = [], []
+    for eta in etas:
+        # L1 module:
+        cb1, vs1, ws1 = get_gd_state_recorder_callback()
+        l1 = L1(init)
+        GradientDescent(FixedLR(eta), callback=cb1).fit(l1)
+        plot_descent_path(
+            L1, np.stack(ws1),
+            f"GD descent path: L1 module, fixed LR (eta={eta})"
+            ).write_image(os.path.join(f"plt_q1_L1_{eta}.png"))
+
+        conv1_traces.append(
+            go.Scatter(x=[*range(len(vs1))], y=vs1, mode='markers+lines',
+                       name=f"eta={eta}", line=dict(width=1)))
+
+        # L2 module:
+        cb2, vs2, ws2 = get_gd_state_recorder_callback()
+        l2 = L2(init)
+        GradientDescent(FixedLR(eta), callback=cb2).fit(l2)
+        plot_descent_path(
+            L2, np.stack(ws2),
+            f"GD descent path: L2 module, fixed LR (eta={eta})"
+            ).write_image(os.path.join(f"plt_q1_L2_{eta}.png"))
+
+        conv2_traces.append(
+            go.Scatter(x=[*range(len(vs2))], y=vs2, mode='markers+lines',
+                       name=f"eta={eta}", line=dict(width=1)))
+
+    # Q3
+    go.Figure(conv1_traces).update_layout(
+        title=f"GD: L1 convergence rate",
+        xaxis=dict(title=f"number of iteration", showgrid=True),
+        yaxis=dict(title=f"loss (L1 norm)", showgrid=True)
+        ).write_image(os.path.join(f"plt_q3_L1.png"))
+    go.Figure(conv2_traces).update_layout(
+        title=f"GD: L2 convergence rate",
+        xaxis=dict(title=f"number of iteration", showgrid=True),
+        yaxis=dict(title=f"loss (L2 norm)", showgrid=True)
+        ).write_image(os.path.join(f"plt_q3_L2.png"))
 
 
 def compare_exponential_decay_rates(

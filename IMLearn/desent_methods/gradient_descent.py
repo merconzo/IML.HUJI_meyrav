@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, NoReturn
+from typing import Callable, NoReturn, Optional
 import numpy as np
 
 from IMLearn.base import BaseModule, BaseLR
@@ -91,7 +91,8 @@ class GradientDescent:
         self.max_iter_ = max_iter
         self.callback_ = callback
 
-    def fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray):
+    def fit(self, f: BaseModule, X: Optional[np.ndarray] = None,
+            y: Optional[np.ndarray] = None):
         """
         Optimize module using Gradient Descent iterations over given input
         samples and responses
@@ -125,7 +126,7 @@ class GradientDescent:
         following named arguments:
             - solver: GradientDescent
                 self, the current instance of GradientDescent
-            - weights: ndarray of shape specified by module's weights
+            - w: ndarray of shape specified by module's weights
                 Current weights of objective
             - val: ndarray of shape specified by module's compute_output
             function
@@ -154,15 +155,15 @@ class GradientDescent:
             # update current properties:
             sum_w += prev_w
             eta = self.learning_rate_.lr_step(t=t)
-            cur_grad = f.compute_jacobian(X=X, y=y)
-            f.weights(prev_w - eta * cur_grad)  # cur w
+            gradient = f.compute_jacobian(X=X, y=y)
+            f.weights = prev_w - eta * gradient  # cur w
             cur_val = f.compute_output(X=X, y=y)
             delta = NORM(f.weights - prev_w)
             if cur_val < min_val:
                 min_val = cur_val
                 best_w = f.weights
             self.callback_(solver=self, w=f.weights, val=cur_val,
-                           grad=cur_grad, t=t, eta=eta, delta=delta)
+                           grad=gradient, t=t, eta=eta, delta=delta)
             if delta < self.tol_:
                 break
 
