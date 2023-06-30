@@ -94,7 +94,7 @@ def get_gd_state_recorder_callback() -> Tuple[
 def compare_fixed_learning_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
         etas: Tuple[float] = (1, .1, .01, .001)):
-
+    # Q 1,2
     conv1_traces, conv2_traces = [], []
     for eta in etas:
         # L1 module:
@@ -107,8 +107,10 @@ def compare_fixed_learning_rates(
             ).write_image(os.path.join(f"plt_q1_L1_{eta}.png"))
 
         conv1_traces.append(
-            go.Scatter(x=[*range(len(vs1))], y=vs1, mode='markers+lines',
-                       name=f"eta={eta}", line=dict(width=1)))
+            go.Scatter(x=[*range(len(vs1))], y=vs1,
+                       mode=('markers+lines' if eta < .5 else 'markers'),
+                       name=f"eta={eta}", line=dict(width=1),
+                       marker=dict(size=3)))
 
         # L2 module:
         cb2, vs2, ws2 = get_gd_state_recorder_callback()
@@ -120,20 +122,34 @@ def compare_fixed_learning_rates(
             ).write_image(os.path.join(f"plt_q1_L2_{eta}.png"))
 
         conv2_traces.append(
-            go.Scatter(x=[*range(len(vs2))], y=vs2, mode='markers+lines',
-                       name=f"eta={eta}", line=dict(width=1)))
+            go.Scatter(
+                x=[*range(len(vs2))], y=vs2, mode='markers+lines',
+                name=f"eta={eta}", line=dict(width=1), marker=dict(size=3)))
 
     # Q3
     go.Figure(conv1_traces).update_layout(
-        title=f"GD: L1 convergence rate",
-        xaxis=dict(title=f"number of iteration", showgrid=True),
+        title=f"GD: L1 convergence rate, fixed LR",
+        xaxis=dict(title=f"iterations", showgrid=True),
         yaxis=dict(title=f"loss (L1 norm)", showgrid=True)
         ).write_image(os.path.join(f"plt_q3_L1.png"))
     go.Figure(conv2_traces).update_layout(
-        title=f"GD: L2 convergence rate",
-        xaxis=dict(title=f"number of iteration", showgrid=True),
-        yaxis=dict(title=f"loss (L2 norm)", showgrid=True)
+        title=f"GD: L2 convergence rate, fixed LR",
+        xaxis=dict(title=f"iterations", showgrid=True),
+        yaxis=dict(title=f"loss (squared L2 norm)", showgrid=True)
         ).write_image(os.path.join(f"plt_q3_L2.png"))
+
+    # Q4
+    for eta in etas:
+        l1 = L1(init)
+        l2 = L2(init)
+        best_w1 = GradientDescent(FixedLR(eta), out_type='best').fit(l1)
+        min_loss1 = float(L1(best_w1).compute_output())
+        best_w2 = GradientDescent(FixedLR(eta), out_type='best').fit(l2)
+        min_loss2 = float(L2(best_w2).compute_output())
+
+        print(f"using eta={eta}:\t L1 min loss is {min_loss1},\t"
+              f"L2 min loss is {min_loss2}")
+
 
 
 def compare_exponential_decay_rates(
