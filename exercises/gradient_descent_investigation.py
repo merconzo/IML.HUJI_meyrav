@@ -100,7 +100,8 @@ def compare_fixed_learning_rates(
         # L1 module:
         cb1, vs1, ws1 = get_gd_state_recorder_callback()
         l1 = L1(init)
-        GradientDescent(FixedLR(eta), callback=cb1).fit(l1)
+        best_w1 = GradientDescent(
+            FixedLR(eta), out_type='best', callback=cb1).fit(l1)
         plot_descent_path(
             L1, np.stack(ws1),
             f"GD descent path: L1 module, fixed LR (eta={eta})"
@@ -115,7 +116,9 @@ def compare_fixed_learning_rates(
         # L2 module:
         cb2, vs2, ws2 = get_gd_state_recorder_callback()
         l2 = L2(init)
-        GradientDescent(FixedLR(eta), callback=cb2).fit(l2)
+        best_w2 = GradientDescent(
+            FixedLR(eta), callback=cb2, out_type='best').fit(l2)
+
         plot_descent_path(
             L2, np.stack(ws2),
             f"GD descent path: L2 module, fixed LR (eta={eta})"
@@ -125,6 +128,12 @@ def compare_fixed_learning_rates(
             go.Scatter(
                 x=[*range(len(vs2))], y=vs2, mode='markers+lines',
                 name=f"eta={eta}", line=dict(width=1), marker=dict(size=3)))
+
+        # Q4
+        min_loss1 = float(L1(best_w1).compute_output())
+        min_loss2 = float(L2(best_w2).compute_output())
+        print(f"using eta={eta}:\t L1 min loss is {min_loss1},\t"
+              f"L2 min loss is {min_loss2}")
 
     # Q3
     go.Figure(conv1_traces).update_layout(
@@ -138,19 +147,6 @@ def compare_fixed_learning_rates(
         yaxis=dict(title=f"loss (squared L2 norm)", showgrid=True)
         ).write_image(os.path.join(f"plt_q3_L2.png"))
 
-    # Q4
-    for eta in etas:
-        l1 = L1(init)
-        l2 = L2(init)
-        best_w1 = GradientDescent(FixedLR(eta), out_type='best').fit(l1)
-        min_loss1 = float(L1(best_w1).compute_output())
-        best_w2 = GradientDescent(FixedLR(eta), out_type='best').fit(l2)
-        min_loss2 = float(L2(best_w2).compute_output())
-
-        print(f"using eta={eta}:\t L1 min loss is {min_loss1},\t"
-              f"L2 min loss is {min_loss2}")
-
-
 
 def compare_exponential_decay_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
@@ -158,13 +154,14 @@ def compare_exponential_decay_rates(
         gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the
     # exponentially decaying learning rate
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
     # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
     # Plot descent path for gamma=0.95
-    raise NotImplementedError()
+    # raise NotImplementedError()
+    pass
 
 
 def load_data(path: str = "../datasets/SAheart.data",
@@ -221,5 +218,5 @@ def fit_logistic_regression():
 if __name__ == '__main__':
     np.random.seed(0)
     compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
+    # compare_exponential_decay_rates()
     fit_logistic_regression()
