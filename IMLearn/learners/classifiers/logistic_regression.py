@@ -98,23 +98,23 @@ class LogisticRegression(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.c_[np.ones(len(X)), X]
-        self.coefs_ = np.random.randn(X.shape[1]) / np.sqrt(X.shape[1])
+        # self.coefs_ = np.random.randn(X.shape[1]) / np.sqrt(X.shape[1])
+        self.coefs_ = np.random.multivariate_normal(
+            np.zeros(X.shape[1]), np.eye(X.shape[1]) / X.shape[1])
         if self.penalty_ == "l1":
-            self.coefs_ = self.solver_.fit(
-                RegularizedModule(LogisticModule(self.coefs_),
-                                  L1(self.coefs_),
-                                  self.lam_,
-                                  self.coefs_),
-                X, y)
+            model = RegularizedModule(LogisticModule(),
+                                      L1(),
+                                      self.lam_,
+                                      self.coefs_)
         elif self.penalty_ == "l2":
-            self.coefs_ = self.solver_.fit(
-                RegularizedModule(LogisticModule(self.coefs_),
-                                  L2(self.coefs_),
-                                  self.lam_,
-                                  self.coefs_),
-                X, y)
+            model = RegularizedModule(LogisticModule(),
+                                      L2(),
+                                      self.lam_,
+                                      self.coefs_)
         else:
-            self.coefs_ = self.solver_.fit(LogisticModule(self.coefs_), X, y)
+            model = LogisticModule()
+        model.weights = self.coefs_
+        self.coefs_ = self.solver_.fit(model, X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
