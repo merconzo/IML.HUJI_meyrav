@@ -97,6 +97,7 @@ def compare_fixed_learning_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
         etas: Tuple[float] = (1, .1, .01, .001)):
     # Q 1,2,4
+    print("### Q1-4: Comparing Fixed learning rates")
     conv1_traces, conv2_traces = [], []
     for eta in etas:
         # L1 module:
@@ -210,8 +211,8 @@ def fit_logistic_regression():
 
     # Plotting convergence rate of logistic regression over SA heart disease
     # data (Q8)
-    # model = LogisticRegression().fit(X_train, y_train)
-    y_prob = LogisticRegression().fit(X_train, y_train).predict_proba(X_train)
+    model = LogisticRegression().fit(X_train, y_train)
+    y_prob = model.predict_proba(X_train)
     fpr, tpr, thresholds = roc_curve(y_train, y_prob)
 
     go.Figure(
@@ -231,6 +232,8 @@ def fit_logistic_regression():
         ).write_image(os.path.join(f"plt_q8_ROC.png"))
 
     # Q9
+    print("\n### Q9: Minimizing Regularized Logistic Regression")
+    print("original loss:", model.loss(X_test, y_test))
     best_a = (tpr - fpr)[np.argmax(tpr - fpr)]
     loss = LogisticRegression(
         alpha=best_a).fit(X_train, y_train).loss(X_test, y_test)
@@ -239,6 +242,7 @@ def fit_logistic_regression():
     # Fitting l1- and l2-regularized logistic regression models,
     # using cross-validation to specify values
     # of regularization parameter
+    print("\n### Q10-11: cross-validation of regularized logistic regression")
 
     max_iter = 20000
     lr = FixedLR(1e-4)
