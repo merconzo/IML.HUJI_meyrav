@@ -8,6 +8,8 @@ from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
+from IMLearn.metrics import misclassification_error
+from IMLearn.model_selection import cross_validate
 from sklearn.metrics import roc_curve, auc
 import plotly.graph_objects as go
 
@@ -208,8 +210,8 @@ def fit_logistic_regression():
 
     # Plotting convergence rate of logistic regression over SA heart disease
     # data (Q8)
-    model = LogisticRegression().fit(X_train, y_train)
-    y_prob = model.predict_proba(X_train)
+    # model = LogisticRegression().fit(X_train, y_train)
+    y_prob = LogisticRegression().fit(X_train, y_train).predict_proba(X_train)
     fpr, tpr, thresholds = roc_curve(y_train, y_prob)
 
     go.Figure(
@@ -237,12 +239,29 @@ def fit_logistic_regression():
     # Fitting l1- and l2-regularized logistic regression models,
     # using cross-validation to specify values
     # of regularization parameter
-    lamdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
 
+    max_iter = 5000
+    lr = FixedLR(1e-4)
+    lamdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+    for p in ['l1', 'l2']:
+        valid_errs = []
+        for lam in lamdas:  # search for lamda
+            model = LogisticRegression(
+                solver=GradientDescent(learning_rate=lr, max_iter=max_iter),
+                penalty=p, lam=lam)
+            train_score, validation_score = cross_validate(
+                model, X_train, y_train, misclassification_error)
+            valid_errs.append(validation_score)
+        best_lam = lamdas[np.argmin(np.array(valid_errs))]
+        model = LogisticRegression(
+            solver=GradientDescent(learning_rate=lr, max_iter=max_iter),
+            penalty=p, lam=best_lam).fit(X_train, y_train)
+        print(f"using {p}: best lamda = {best_lam} \t loss = "
+              f"{model.loss(X_test, y_test)}")
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # compare_fixed_learning_rates()  # TODO: uncomment
+    compare_fixed_learning_rates()
     # compare_exponential_decay_rates()
     fit_logistic_regression()
