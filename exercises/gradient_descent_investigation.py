@@ -8,7 +8,7 @@ from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
-
+from sklearn.metrics import roc_curve, auc
 import plotly.graph_objects as go
 
 
@@ -94,7 +94,7 @@ def get_gd_state_recorder_callback() -> Tuple[
 def compare_fixed_learning_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
         etas: Tuple[float] = (1, .1, .01, .001)):
-    # Q 1,2
+    # Q 1,2,4
     conv1_traces, conv2_traces = [], []
     for eta in etas:
         # L1 module:
@@ -203,20 +203,46 @@ def load_data(path: str = "../datasets/SAheart.data",
 
 def fit_logistic_regression():
     # Load and split SA Heard Disease dataset
-    X_train, y_train, X_test, y_test = load_data()
+    # X_train, y_train, X_test, y_test = load_data()
+    X_train, y_train, X_test, y_test = [np.array(data) for data in load_data()]
 
     # Plotting convergence rate of logistic regression over SA heart disease
-    # data
-    raise NotImplementedError()
+    # data (Q8)
+    model = LogisticRegression().fit(X_train, y_train)
+    y_prob = model.predict_proba(X_train)
+    fpr, tpr, thresholds = roc_curve(y_train, y_prob)
+
+    go.Figure(
+        data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
+                         line=dict(color="black", dash='dash'),
+                         name="Random Class Assignment"),
+              go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds,
+                         name="", showlegend=False, marker_size=5,
+                         marker_color="deeppink",
+                         hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: "
+                                       "%{x:.3f}<br>TPR: %{y:.3f}")],
+        layout=go.Layout(
+            title=rf"$\text{{ROC Curve Of LR Fitted Model - AUC}}="
+                  rf"{auc(fpr, tpr):.6f}$",
+            xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+            yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$"))
+        ).write_image(os.path.join(f"plt_q8_ROC.png"))
+
+    # Q9
+    best_a = (tpr - fpr)[np.argmax(tpr - fpr)]
+    loss = LogisticRegression(
+        alpha=best_a).fit(X_train, y_train).loss(X_test, y_test)
+    print(f"best alpha: {best_a} \t loss: {loss}")
 
     # Fitting l1- and l2-regularized logistic regression models,
     # using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+    lamdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    compare_fixed_learning_rates()
+    # compare_fixed_learning_rates()  # TODO: uncomment
     # compare_exponential_decay_rates()
     fit_logistic_regression()

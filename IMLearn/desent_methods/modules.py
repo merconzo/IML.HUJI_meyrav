@@ -164,7 +164,7 @@ class LogisticModule(BaseModule):
             self.weights
         """
         Xw = X @ self.weights
-        return (-1 / X.shape[0]) * ((y - np.exp(Xw) / (1 + np.exp(Xw))) @ X)
+        return - (1 / X.shape[0]) * ((y - np.exp(Xw) / (1 + np.exp(Xw))) @ X)
 
 
 class RegularizedModule(BaseModule):
