@@ -240,7 +240,7 @@ def fit_logistic_regression():
     # using cross-validation to specify values
     # of regularization parameter
 
-    max_iter = 5000
+    max_iter = 20000
     lr = FixedLR(1e-4)
     lamdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
     for p in ['l1', 'l2']:
